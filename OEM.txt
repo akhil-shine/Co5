@@ -1,0 +1,143 @@
+run
+composer init
+composer require mongodb/mongodb
+
+
+insert.php
+
+<?php
+require_once __DIR__ . '/vendor/autoload.php';
+
+if (isset($_POST['is_submit'])) {
+    $c = new MongoDB\Client('mongodb://localhost:27017');
+    $collection = $c->exam1->test;
+
+    $insertOneResult = $collection->insertOne([
+        'name' => $_POST['name'],
+        'age' => $_POST['age'],
+        'email' => $_POST['email'],
+        'phno' => $_POST['phno'],
+    ]);
+}
+?>
+
+<html>
+<head>
+    <title>Exam CRUD</title>
+</head>
+<body>
+    <form method="POST" action="#">
+        Name: <input type="text" name="name">
+        Age: <input type="number" name="age">
+        Email: <input type="text" name="email">
+        Phone No: <input type="number" name="phno">
+        <input type="submit" value="Submit" name="is_submit">
+    </form>
+</body>
+</html>
+
+view.php
+<html>
+<head>
+    <title>Exam View</title>
+</head>
+<body>
+    <?php
+    require_once __DIR__ . '/vendor/autoload.php';
+    $collection = (new MongoDB\Client('mongodb://localhost:27017'))->exam1->test;
+    $samples = $collection->find();
+    ?>
+
+    <table border=2>
+        <tr>
+            <th>Name</th>
+            <th>Age</th>
+            <th>Email</th>
+            <th>Phone No</th>
+        </tr>
+        <?php foreach ($samples as $sample): ?>
+        <tr>
+            <td><?= $sample['name'] ?></td>
+            <td><?= $sample['age'] ?></td>
+            <td><?= $sample['email'] ?></td>
+            <td><?= $sample['phno'] ?></td>
+			
+			<a href="delete.php?id=<?= $sample['_id'] ?>">Delete</a> <!-- Add a delete link -->
+            <a href="edit.php?id=<?= $sample['_id'] ?>">Edit</a> <!-- Add an edit link -->
+			
+			
+        </tr>
+        <?php endforeach ?>
+    </table>
+</body>
+</html>
+
+edit.php
+<?php
+require_once __DIR__ . '/vendor/autoload.php';
+
+if (isset($_GET['id'])) {
+    $c = new MongoDB\Client('mongodb://localhost:27017');
+    $collection = $c->Exam->sample;
+
+    $id = new MongoDB\BSON\ObjectId($_GET['id']);
+
+    // Fetch the existing record for editing
+    $sample = $collection->findOne(['_id' => $id]);
+
+    if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['is_submit'])) {
+        // Update the record with new values
+        $updateResult = $collection->updateOne(
+            ['_id' => $id],
+            ['$set' => [
+                'name' => $_POST['name'],
+                'age' => $_POST['age'],
+                'email' => $_POST['email'],
+                'phno' => $_POST['phno'],
+            ]]
+        );
+
+        if ($updateResult->getModifiedCount() > 0) {
+            header('Location: view.php'); // Redirect to the view page after editing
+            exit;
+        } else {
+            echo "Error updating record.";
+        }
+    }
+}
+?>
+
+<html>
+<head>
+    <title>Edit Record</title>
+</head>
+<body>
+    <form method="POST" action="#">
+        Name: <input type="text" name="name" value="<?= $sample['name'] ?>">
+        Age: <input type="number" name="age" value="<?= $sample['age'] ?>">
+        Email: <input type="text" name="email" value="<?= $sample['email'] ?>">
+        Phone No: <input type="number" name="phno" value="<?= $sample['phno'] ?>">
+        <input type="submit" value="Update" name="is_submit">
+    </form>
+</body>
+</html>
+
+delete.php
+<?php
+require_once __DIR__ . '/vendor/autoload.php';
+
+if (isset($_GET['id'])) {
+    $c = new MongoDB\Client('mongodb://localhost:27017');
+    $collection = $c->Exam->sample;
+
+    $id = new MongoDB\BSON\ObjectId($_GET['id']);
+    $result = $collection->deleteOne(['_id' => $id]);
+    
+    if ($result->getDeletedCount() > 0) {
+        header('Location: view.php'); // Redirect to the view page after deletion
+        exit;
+    } else {
+        echo "Error deleting record.";
+    }
+}
+?>
